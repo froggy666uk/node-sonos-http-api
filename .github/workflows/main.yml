@@ -17,7 +17,7 @@ env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 jobs:
   api-test:
-    runs-on: self-hosted
+    runs-on: ubuntu-slim
     steps:
       - name: List open PRs in this repository using rest API
         id: check-PRs
