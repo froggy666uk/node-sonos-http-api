@@ -19,17 +19,22 @@ jobs:
   api-test:
     runs-on: ubuntu-slim
     steps:
-      - name: List open PRs in this repository using rest API
-        id: check-PRs
+      - name: Get open PRs from all repositories
+        id: get-PRs
         run: |
           declare -a repos=("node-sonos-http-api" "node-sonos-http-api")
           declare -a easTeam=("tester")
           declare -a unknownPR
+          stalePeriod="1 hour"
+
+
           readRepoStub()
           {
             repo=${1}
             cat ~/${repo} | jq -r '.[] | "\(.url)~\(.title)~\(.user.login)~\(.created_at)~\(.updated_at)"'
           }
+
+
           readRepo()
           {
             repo=${1}
@@ -40,39 +45,40 @@ jobs:
                     https://api.github.com/repos/froggy666uk/${repo}/pulls?state=open | \
             jq -r '.[] | "\(.url)~\(.title)~\(.user.login)~\(.created_at)~\(.updated_at)"'
           }
+
+
           runReport()
           {
-            for repo in "${repos[@]}"
+            stalePeriodSecs=$(date -d "${stalePeriod} ago" +%s)
+            for repo in "${repostest[@]}"
             do
               IFS=$'\n'
-              for PR in $(readRepo $repo)
+              for PR in $(readRepoStub $repo)
               do
                 IFS='~'; arrPR=($PR)
                 url=${arrPR[0]} ; desc=${arrPR[1]} ; author=${arrPR[2]} ; created=${arrPR[3]} ; updated=${arrPR[4]}
+
                 if [[ ! " ${easTeam[@]} " =~ [[:space:]]"${author}"[[:space:]] ]]; then
-                  echo $url raised on $created and last modified on $updated by unkown author $author
-                  unknownPR+=($arrPR)
-                 # check when PR was raised or last updated
-                 # if (last updated is null or equals created date) and  (then created date is  > 1 day) then
-                  # add to list of PRs which will be included in slack report
-                 # fi
-               fi
+                  # Check when PR was raised and last updated
+                  # If PR was raised more than stalePeriod ago and hasn't been updated since it was raised, then we need to look at it.
+                  createTime=$(date -d "${created}" +%s)
+                  updateTime=$(date -d "${updated}" +%s)
+                  if [[ "${createTime}" -lt "${stalePeriodSecs}" ]] && [[ "${createTime}" -eq "${updateTime}" ]] ; then
+                    echo $url raised on $created by unknown author $author
+                    unknownPR+=($arrPR)
+                  fi
+                fi
               done
             done
+
             # If list of PRs > 0 then generate slack report
             if [ ${#unknownPR[@]} -gt 0 ]; then
-              echo ${#unknownPR[@]} PRs found with unknown author
+              echo ${#unknownPR[@]} PRs found with unknown author raised more than ${stalePeriod} ago
             fi
           }
+
+
           runReport
-
-
-
-
-
-
-
-
 
 
  
