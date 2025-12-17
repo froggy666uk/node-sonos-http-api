@@ -1,5 +1,10 @@
 [![PayPal donate button](https://img.shields.io/badge/paypal-donate-yellow.svg)](https://www.paypal.me/jishi "Donate once-off to this project using Paypal") [![Join the chat at gitter](https://img.shields.io/gitter/room/badges/shields.svg)](https://gitter.im/node-sonos-http-api/Lobby "Need assistance? Join the chat at Gitter.im") 
 
+⚠WARNING!⚠
+
+The Sonos S2 update, released June 2020, still works with this API. However, it might break in the future if and when Sonos decide to drop UPnP as the control protocol. 
+
+
 Feel free to use it as you please. Consider donating if you want to support further development. Reach out on the gitter chat if you have issues getting it to run, instead of creating new issues, thank you!
 
 If you are also looking for cloud control (ifttt, public webhooks etc), see the [bronos-client](http://www.bronos.net) project! That pi image also contains an installation of this http-api.  
@@ -84,9 +89,9 @@ The actions supported as of today:
 * favorites (with optional "detailed" parameter)
 * playlist
 * lockvolumes / unlockvolumes (experimental, will enforce the volume that was selected when locking!)
-* repeat (on/off)
-* shuffle (on/off)
-* crossfade (on/off)
+* repeat (on(=all)/one/off(=none)/toggle)
+* shuffle (on/off/toggle)
+* crossfade (on/off/toggle)
 * pauseall (with optional timeout in minutes)
 * resumeall (will resume the ones that was pause on the pauseall call. Useful for doorbell, phone calls, etc. Optional timeout)
 * say
@@ -101,9 +106,9 @@ The actions supported as of today:
 * clippreset
 * join / leave  (Grouping actions)
 * sub (on/off/gain/crossover/polarity) See SUB section for more info
-* nightmode (on/off, PLAYBAR only)
-* speechenhancement (on/off, PLAYBAR only)
-* bass/treble (use -10 thru 10 as value. 0 is neutral)
+* nightmode (on/off/toggle, PLAYBAR only)
+* speechenhancement (on/off/toggle, PLAYBAR only)
+* bass/treble (use -10 through to 10 as the value. 0 is neutral)
 
 
 State
@@ -293,6 +298,8 @@ Example content:
       "volume": 15
     }
   ],
+  "trackNo": 3,
+  "elapsedTime": 42,
   "playMode": {
     "shuffle": true,
     "repeat": "all",
@@ -318,6 +325,7 @@ Available options are:
 * auth: require basic auth credentials which requires a username and password
 * announceVolume: the percentual volume use when invoking say/sayall without any volume parameter
 * presetDir: absolute path to look for presets (folder must exist!)
+* household: when theres multiple sonos accounts on one network (example: Sonos_ab7d67898dcc5a6d, find it in [Your sonos IP]:1400/status/zp). Note that the value after the '.' should not be removed. See more info here: https://github.com/jishi/node-sonos-http-api/issues/783
 
 
 Example:
@@ -395,6 +403,7 @@ Experimental support for TTS. Today the following providers are available:
 * AWS Polly
 * Google (default)
 * macOS say command
+* Elevenlabs
 
 It will use the one you configure in settings.json. If you define settings for multiple TTS services, it will not be guaranteed which one it will choose!
 
@@ -500,10 +509,10 @@ Example:
 
 Supported voices are:
 
-Hoda, Hedda, Stefan, Catherine, Linda, Susan, George, Ravi, ZiraRUS, BenjaminRUS, Laura, Pablo, Raul, Caroline, Julie, Paul, Cosimo, Ayumi, Ichiro, Daniel, Irina, Pavel, HuihuiRUS, Yaoyao, Kangkang, Tracy, Danny, Yating, Zhiwei
+ Hoda, Naayf, Ivan, HerenaRUS, Jakub, Vit, HelleRUS, Michael, Karsten, Hedda, Stefan, Catherine, Linda, Susan, George, Ravi, ZiraRUS, BenjaminRUS, Laura, Pablo, Raul, Caroline, Julie, Paul, Cosimo, Ayumi, Ichiro, Daniel, Irina, Pavel, HuihuiRUS, Yaoyao, Kangkang, Tracy, Danny, Yating, Zhiwei
 
 See https://www.microsoft.com/cognitive-services/en-us/speech-api/documentation/API-Reference-REST/BingVoiceOutput#SupLocales to identify
-which language and gender it maps against.
+which language and gender it maps against. If your desired voice is not in the list of supported one, raise an issue about adding it or send me a PR.
 
 #### AWS Polly
 
@@ -523,7 +532,9 @@ You can also specify it for this application only, using:
 	}
 ```
 
-Choose the region where you registered your account, or the one closest to you. Polly is only supported in US East (Northern Virginia), US West (Oregon), US East (Ohio), and EU (Ireland) as of today (dec 2016)
+To select the neural engine, append `Neural` to the name, e.g. `DanielNeural`.
+
+Choose the region where you registered your account, or the one closest to you.
 
 If you have your credentials elsewhere and want to stick with the default voice, you still need to make sure that the aws config option is set to trigger AWS TTS:
 
@@ -600,9 +611,51 @@ To get a current list of voices, you would need to use the AWS CLI and invoke th
 | Welsh | cy-GB | Female | Gwyneth |
 | Welsh English | en-GB-WLS | Male | Geraint |
 
+#### Elevenlabs
+
+Elevenlabs is a TTS service enabling generatiung TTS audio files using AI generated voices.
+
+Requires API Key and optionally default voiceId.
+
+Since Elevenlabs AI models are multilingual by default, there is no need (nor place) for `language` parameter in 
+Elevenlabs API. Because of this, `language` parameter in URL is used to inject custom `voiceId` on per-request basis. You will
+need to either configure default voiceId in `settings.json` or provide `voiceId` with every HTTP request.
+
+##### Config
+
+Minimal:
+```json
+	{
+	  "elevenlabs": {
+		"auth": {
+		  "apiKey": ""
+		}
+	  }
+	}
+```
+
+Full:
+```json
+	{
+	  "elevenlabs": {
+		"auth": {
+		  "apiKey": ""
+		},
+		"config": {
+		  "voiceId": "",
+		  "stability": 0.5,
+		  "similarityBoost": 0.5,
+		  "speakerBoost": true,
+		  "style": 1,
+		  "modelId": "eleven_multilingual_v2"
+		}
+	  }
+	}
+```
+
 #### Google (default if no other has been configured)
 
-Does not require any API keys. Please note that Google has been known in the past to change the requirements for its Text-to-Speech API, and this may stop working in the future. There is also limiations to have many request one is allowed to do in a specific time period.
+Does not require any API keys. Please note that Google has been known in the past to change the requirements for its Text-to-Speech API, and this may stop working in the future. There is also limiations to how many requests one is allowed to do in a specific time period.
 
 The following language codes are supported
 
@@ -778,7 +831,9 @@ Switch "placement adjustment" or more commonly known as phase. 0 = 0°, 1 = 180�
 Spotify, Apple Music and Amazon Music (Experimental)
 ----------------------
 
-Allows you to perform your own external searches for Apple Music or Spotify songs or albums and play a specified song or track ID. The Music Search funtionality outlined further below performs a search of its own and plays the specified music.
+Allows you to perform your own external searches for Spotify, Apple Music or Amazon Music songs or albums and play a specified song or track ID. The Music Search funtionality outlined further below performs a search of its own and plays the specified music.
+
+Ensure you have added and registered the respective service with your Sonos account, before trying to control your speakers with node-sonos-http-api. Instructions on how to do this can be found here: https://support.sonos.com/s/article/2757?language=en_US
 
 The following endpoints are available:
 
@@ -791,28 +846,51 @@ The following endpoints are available:
 # Apple Music
 /RoomName/applemusic/{now,next,queue}/song:{songID}
 /RoomName/applemusic/{now,next,queue}/album:{albumID}
+/RoomName/applemusic/{now,next,queue}/playlist:{playlistID}
 
 # Amazon Music
 /RoomName/amazonmusic/{now,next,queue}/song:{songID}
 /RoomName/amazonmusic/{now,next,queue}/album:{albumID}
 ```
 
+**Spotify**
+
+You can find the **Spotify** track and album IDs as the last part of the URL. 
+
+How to find the URL?
+- Web player: the address bar URL for albums and playlist; select _Copy Song Link_ from the dot menu. 
+- Desktop client: via _Share > Copy {Album,Playlist,Song} Link_
+- Mobile client: via _Share > Copy Link_
+
+For Spotify playlists, you'll need this format: `spotify:user:spotify:playlist:{playlistid}`. Even if it's a public playlist, you always need to prefix with `spotify:user:`. An example of a great playlist: `/kitchen/spotify/now/spotify:user:spotify:playlist:32O0SSXDNWDrMievPkV0Im`.
+
+To get more technical, you actually use the Spotify URI (not URL) for the endpoint, like so: `{room}/spotify/{now,next,queue}/{spotifyuri}`.
+
 It only handles a single **spotify** account currently. It will probably use the first account added on your system.
+
+**Apple Music**
 
 You can find **Apple Music** song and album IDs via the [iTunes Search
 API](https://affiliate.itunes.apple.com/resources/documentation/itunes-store-web-service-search-api/).
 
-You can also use iTunes to figure out song and album IDs. Right click on a song or album and select "Share" -> "Copy Link". You can do this when you searched within Apple Music or from your media library as long as the song is available in Apple Music.
+You can also use iTunes to figure out song, album, and playlist IDs. Right click on a song, album, or playlist and select "Share" -> "Copy Link". You can do this when you searched within Apple Music or from your media library as long as the song is available in Apple Music.
 
 Have a look at the link you just copied. 
 
 *If you shared the link to a song:*
-The format is: https://itunes.apple.com/de/album/{songName}/{albumID}?i={songID}
+The format is: https://itunes.apple.com/{countryCode}/album/{songName}/{albumID}?i={songID}
 > eg: https://itunes.apple.com/de/album/blood-of-my-enemies/355363490?i=355364259
 
 *If you shared the link to an album:*
-The format is: https://itunes.apple.com/de/album/{albumName}/{albumID}
+The format is: https://itunes.apple.com/{countryCode}/album/{albumName}/{albumID}
 > eg: https://itunes.apple.com/de/album/f-g-restless/355363490
+
+*If you shared the link to a playlist:*
+The format is: https://itunes.apple.com/{countryCode}/playlist/{playlistName}/{playlistID}
+> eg: https://music.apple.com/gb/playlist/lofi-girls-favorites/pl.ed52c9eeaa0740079c21fa8e455b225e
+
+
+**Amazon Music**
 
 To find **Amazon Music** song and album IDs you can use the Amazon Music App, search for a song or an album and share a link.
 
@@ -826,6 +904,89 @@ The format is: https://music.amazon.de/albums/{albumID}?trackAsin={songID}&ref=d
 The format is: https://music.amazon.de/albums/{albumID}?ref=dm_sh_97aa-255b-dmcp-c6ba-4ff00&musicTerritory=DE&marketplaceId=A1PA6795UKMFR9
 > eg: https://music.amazon.de/albums/B0727SH7LW?ref=dm_sh_97aa-255b-dmcp-c6ba-4ff00&musicTerritory=DE&marketplaceId=A1PA6795UKMFR9
 
+BBC Sounds (as of 2022 only available in the UK)
+----------------------
+Ensure you have added and registered the BBC Sounds service with your Sonos account, before trying to control your speakers with node-sonos-http-api. Instructions on how to do this can be found here: https://www.bbc.co.uk/sounds/help/questions/listening-on-a-smart-speaker/sonos or here: https://support.sonos.com/s/article/2757?language=en_US
+
+You can specify a BBC station and the station will be played or set depending on the command used.
+
+To play immediately:
+```
+/RoomName/bbcsounds/play/{stream code}
+```
+To set the station without playing:
+```
+/RoomName/bbcsounds/set/{stream code}
+```
+
+Refer to the table below for available codes for BBC Radio Stations
+
+|  BBC Radio Station Name          | Stream Code                      |
+|----------------------------------|----------------------------------|
+|  BBC Radio 1                     | bbc_radio_one                    |
+|  BBC 1Xtra                       | bbc_1xtra                        |
+|  BBC 1Dance                      | bbc_radio_one_dance              |
+|  BBC 1Relax                      | bbc_radio_one_relax              |
+|  BBC Radio 2                     | bbc_radio_two                    |
+|  BBC Radio 3                     | bbc_radio_three                  |
+|  BBC Radio 4 FM                  | bbc_radio_fourfm                 |
+|  BBC Radio 4 LW                  | bbc_radio_fourlw                 |
+|  BBC Radio 4 Extra               | bbc_radio_four_extra             |
+|  BBC Radio 5 Live                | bbc_radio_five_live              |
+|  BBC Radio 5 Live Sports Extra   | bbc_five_live_sports_extra       |
+|  BBC Radio 6 Music               | bbc_6music                       |
+|  BBC Asian Network               | bbc_asian_network                |
+|  BBC Radio Berkshire             | bbc_radio_berkshire              |
+|  BBC Radio Bristol               | bbc_radio_bristol                |
+|  BBC Radio Cambridge             | bbc_radio_cambridge              |
+|  BBC Radio Cornwall              | bbc_radio_cornwall               |
+|  BBC Radio Cumbria               | bbc_radio_cumbria                |
+|  BBC Radio Cymru                 | bbc_radio_cymru                  |
+|  BBC Radio Cymru 2               | bbc_radio_cymru_2                |
+|  BBC Radio CWR                   | bbc_radio_coventry_warwickshire  |
+|  BBC Radio Derby                 | bbc_radio_derby                  |
+|  BBC Radio Devon                 | bbc_radio_devon                  |
+|  BBC Radio Essex                 | bbc_radio_essex                  |
+|  BBC Radio Foyle                 | bbc_radio_foyle                  |
+|  BBC Radio Gloucestershire       | bbc_radio_gloucestershire        |
+|  BBC Radio Guernsey              | bbc_radio_guernsey               |
+|  BBC Radio Hereford Worcester    | bbc_radio_hereford_worcester     |
+|  BBC Radio Humberside            | bbc_radio_humberside             |
+|  BBC Radio Jersey                | bbc_radio_jersey                 |
+|  BBC Radio Kent                  | bbc_radio_kent                   |
+|  BBC Radio Lancashire            | bbc_radio_lancashire             |
+|  BBC Radio Leeds                 | bbc_radio_leeds                  |
+|  BBC Radio Leicester             | bbc_radio_leicester              |
+|  BBC Radio Lincolnshire          | bbc_radio_lincolnshire           |
+|  BBC Radio London                | bbc_london                       |
+|  BBC Radio Manchester            | bbc_radio_manchester             |
+|  BBC Radio Merseyside            | bbc_radio_merseyside             |
+|  BBC Radio nan Gaidheal          | bbc_radio_nan_gaidheal           |
+|  BBC Radio Newcastle             | bbc_radio_newcastle              |
+|  BBC Radio Norfolk               | bc_radio_norfolk                 |
+|  BBC Radio Northampton           | bbc_radio_northampton            |
+|  BBC Radio Nottingham            | bbc_radio_nottingham             |
+|  BBC Radio Oxford                | bbc_radio_oxford                 |
+|  BBC Radio Scotland FM           | bbc_radio_scotland_fm            |
+|  BBC Radio Scotland Extra        | bbc_radio_scotland_mw            | 
+|  BBC Radio Sheffield             | bbc_radio_sheffield              |
+|  BBC Radio Shropshire            | bbc_radio_shropshire             |
+|  BBC Radio Solent                | bbc_radio_solent                 |
+|  BBC Radio Somerset              | bbc_radio_somerset_sound         |
+|  BBC Radio Stoke                 | bbc_radio_stoke                  |
+|  BBC Radio Suffolk               | bbc_radio_suffolk                |
+|  BBC Radio Surrey                | bbc_radio_surrey                 |
+|  BBC Radio Sussex                | bbc_radio_sussex                 |
+|  BBC Radio Tees                  | bbc_tees                         |
+|  BBC Radio Three Counties Radio  | bbc_three_counties_radio         |
+|  BBC Radio Ulster                | bbc_radio_ulster                 |
+|  BBC Radio Wales                 | bbc_radio_wales_fm               |
+|  BBC Radio Wales Extra           | bbc_radio_wales_am               |
+|  BBC Radio Wiltshire             | bbc_radio_wiltshire              |
+|  BBC Radio WM                    | bbc_wm                           |
+|  BBC Radio York                  | bbc_radio_york                   |
+|  BBC World_Service               | bbc_world_service                |
+|  Cbeebies Radio                  | cbeebies_radio                   |
 
 SiriusXM
 ----------------------
@@ -991,6 +1152,31 @@ or
 "data" property will be equal to the same data as you would get from /RoomName/state or /zones. There is an example endpoint in the root if this project called test_endpoint.js which you may fire up to get an understanding of what is posted, just invoke it with "node test_endpoint.js" in a terminal, and then start the http-api in another terminal.
 
 
+Server Sent Events
+-----
+
+As an alternative to the web hook you can also call the `/events` endpoint to receive every state change and topology change as [Server Sent Event](https://html.spec.whatwg.org/multipage/server-sent-events.html#server-sent-events).
+Compared to the web hook there is no configuration required on the server, and you can listen for events from multiple clients.
+
+Because it is a long-polling connection, you must take care of errors in your client code and re-connect if necessary.
+
+The server sends events formatted as single-line JSON in the format of Server Sent Events: every event starts with the string `data: `, followed by the single-line JSON formatted event, and is terminated by two new line characters.
+
+There are [several client libraries available](https://en.wikipedia.org/wiki/Server-sent_events#Libraries) to listen for Server Sent Events.
+Using `curl` yields the following output for some volume changes:
+
+```shell
+host:~ user$ curl localhost:5005/events
+data: {"type":"volume-change","data":{"uuid":"RINCON_E2832F58D9074C45B","previousVolume":13,"newVolume":19,"roomName":"Office"}}
+
+data: {"type":"volume-change","data":{"uuid":"RINCON_E2832F58D9074C45B","previousVolume":19,"newVolume":25,"roomName":"Office"}}
+
+data: {"type":"volume-change","data":{"uuid":"RINCON_E2832F58D9074C45B","previousVolume":25,"newVolume":24,"roomName":"Office"}}
+
+data: {"type":"volume-change","data":{"uuid":"RINCON_E2832F58D9074C45B","previousVolume":23,"newVolume":23,"roomName":"Office"}}
+
+```
+
 DOCKER
 -----
 
@@ -1026,6 +1212,11 @@ If port 3500 is occupied while trying to bind it, it will try using 3501, 3502, 
 Amazon Alexa voice layer on top of the amazing NodeJS component
 https://github.com/hypermoose/AlexaForSonos
 
+**Echo Sonos (Alexa Skills)**
+
+Amazon Echo integration with Sonos
+https://github.com/rgraciano/echo-sonos
+
 **JukeBot (Ruby)**
 
 A Slack bot that can control a Sonos instance. Custom spotify integration to find music.
@@ -1045,4 +1236,9 @@ https://github.com/cjrpaterson/sonos-cron
 
 A Node server to receive notifications from node-sonos-http-api and push them via socket.io to the clients. 
 https://github.com/TimoKorinth/sonos-push-server
+
+**SonoBoss (Siri Shortcut)**
+
+A ChatGPT-assisted Siri Shortcut that acts as a virtual assistant to let you find music and control Sonos through voice and chat.
+https://github.com/Barloew/SonoBoss
 
