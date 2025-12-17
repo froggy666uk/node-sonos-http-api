@@ -47,7 +47,9 @@ jobs:
           runReport()
           {
             stalePeriodSecs=$(date -d "${stalePeriod} ago" +%s)
-            for repo in "${{ env.REPOS }}[@]"
+            repos=${{ env.REPOS }}
+            echo ${repos}
+            for repo in "${repos[@]}"
             do
               IFS=$'\n'
               for PR in $(readRepo $repo)
