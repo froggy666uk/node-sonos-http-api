@@ -65,11 +65,6 @@ jobs:
 
             echo "UNKNOWN_PRS=$unknownPRs" >> $GITHUB_ENV
 
-
-            # If list of PRs > 0 then generate slack report
-#            if [ ${#unknownPRs[@]} -gt 0 ]; then
- #             echo ${#unknownPRs[@]} PRs found with unknown author raised more than ${{ env.PR_AGE }} ago
-  #          fi
           }
 
           getPRs
