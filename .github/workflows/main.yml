@@ -12,24 +12,17 @@ on:
 env:
   GH_TOKEN : ${{ secrets.GITHUB_TOKEN }}
   REPOS    : ("node-sonos-http-api" "node-sonos-http-api")
-  EAS_TEAM : ("tester1" "tester2" "froggy666uk")
-  
+  EAS_TEAM : ("tester1" "tester2")
+  PR_AGE   : "1 hour"
 jobs:
   api-test:
     runs-on: ubuntu-slim
     steps:
-      - name: Get open PRs from all repositories
+      - name: Get open PRs from all EAS repositories
         id: get-PRs
         run: |
-          declare -a unknownPR
-          stalePeriod="1 hour"
-
-          readRepoStub()
-          {
-            repo=${1}
-            cat ~/${repo} | jq -r '.[] | "\(.url)~\(.title)~\(.user.login)~\(.created_at)~\(.updated_at)"'
-          }
-
+          declare -a unknownPRs
+          
           readRepo()
           {
             repo=${1}
@@ -43,11 +36,10 @@ jobs:
 
           runReport()
           {
-            stalePeriodSecs=$(date -d "${stalePeriod} ago" +%s)
+            stalePeriodSecs=$(date -d "${{ env.PR_AGE }} ago" +%s)
             repos=${{ env.REPOS }}
             easTeam=${{ env.EAS_TEAM }}
-            echo ${easTeam[0]}
-            echo ${easTeam[1]}
+
             for repo in "${repos[@]}"
             do
               IFS=$'\n'
@@ -71,7 +63,7 @@ jobs:
 
             # If list of PRs > 0 then generate slack report
             if [ ${#unknownPR[@]} -gt 0 ]; then
-              echo ${#unknownPR[@]} PRs found with unknown author raised more than ${stalePeriod} ago
+              echo ${#unknownPR[@]} PRs found with unknown author raised more than ${{ env.PR_AGE }} ago
             fi
           }
 
