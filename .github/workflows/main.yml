@@ -106,7 +106,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -n "${{ env.UNKNOWN_PRS }}" ]; then
-            echo -e "The following external PRs have been raised in the last ${{ env.PR_AGE }}:\n\n${{ env.UNKNOWN_PRS }}\n"
+            echo -e "The following external Pull Requests have recently been raised:\n\n${{ env.UNKNOWN_PRS }}\n"
 
             if [ "${{ env.SEND_NOTIFICATION }}" != "false" ]; then
               curl https://${{ secrets.ZENDESK_URL }}/api/v2/tickets/ \
@@ -134,7 +134,7 @@ jobs:
           fi
 
           if [ -z "${{ env.UNKNOWN_PRS }}" ]; then
-            echo "There have been no new external PRs raised in the last ${{ env.PR_AGE }}."
+            echo "There have been no new external Pull Requests raised."
           fi
 
 
