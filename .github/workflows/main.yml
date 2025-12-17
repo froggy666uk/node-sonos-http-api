@@ -13,7 +13,7 @@ on:
 env:
   GH_TOKEN : ${{ secrets.GITHUB_TOKEN }}
   REPOS    : ("node-sonos-http-api" "node-sonos-http-api")
-  EAS_TEAM : ("tester1" "froggy666uk")
+  EAS_TEAM : ("tester1" "tester2")
   PR_AGE   : "1 hour"
   
 jobs:
@@ -102,7 +102,30 @@ jobs:
           set -euo pipefail
           if [ -n "${{ env.UNKNOWN_PRS }}" ]; then
             echo -e "The following external PRs have been raised in the last ${{ env.PR_AGE }}:\n\n${{ env.UNKNOWN_PRS }}\n"
-          
+
+            if [ "${{ env.SEND_NOTIFICATION }}" != "false" ]; then
+              curl https://${{ secrets.ZENDESK_URL }}/api/v2/tickets/ \
+              -d '{
+                "ticket": {
+                  "subject": "External Pull Request(s) have been raised in the EAS repositories",
+                  "status": "open",
+                  "description": "The following Pull Request(s) have been raised by an external author:\n${{ env.UNKNOWN_PRS }}",
+                  "comment": {
+                    "body": "The following Pull Request(s) have been raised by an external author:\n${{ env.UNKNOWN_PRS }}"
+                  },
+                  "priority": "normal",
+                  "tags": "[\"e_a_new_alarm\", \"e_a_send_slack_dev\"]",
+                  "fields": [
+                    {"12811397846172": "info"},
+                    {"12811367206428": "*Description*: External Pull Request(s) have been raised in the EAS repositories"},
+                    {"12811389347356": "*Impact*: No impact, but Pull Request(s) should be acknowledged/updated with a comment to reassure the author that they are being looked at."},
+                    {"12811443148060": "*Pull Requests*: ${{ env.UNKNOWN_PRS }}"}
+                  ]}
+                }' \
+                -H "Content-Type: application/json" \
+                -H "Authorization: Basic ${{ secrets.ZENDESK_API_KEY }}" \
+                -X POST
+            fi
           
           
           fi
