@@ -8,15 +8,12 @@ on:
         description: "Publish notifications on this run:"
         required: false
         default: "false"
-      debug:
-        description: "Run in debug mode - no actions will be taken"
-        required: false
-        default: "true"
   push:
 env:
-  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  REPOS:    ("node-sonos-http-api" "node-sonos-http-api")
-  EAS_TEAM: ("tester1" "tester2")
+  GH_TOKEN : ${{ secrets.GITHUB_TOKEN }}
+  REPOS    : ("node-sonos-http-api" "node-sonos-http-api")
+  EAS_TEAM : ("tester1" "tester2" "froggy666uk")
+  
 jobs:
   api-test:
     runs-on: ubuntu-slim
