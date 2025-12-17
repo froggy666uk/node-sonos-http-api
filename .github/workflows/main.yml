@@ -14,7 +14,7 @@ env:
   GH_TOKEN : ${{ secrets.GITHUB_TOKEN }}
   REPOS    : ("node-sonos-http-api" "node-sonos-http-api")
   EAS_TEAM : ("tester1" "tester2")
-  PR_AGE   : "1 hour"
+  PR_AGE   : "1 day"
   
 jobs:
   api-test:
@@ -130,9 +130,7 @@ jobs:
                 -H "Content-Type: application/json" \
                 -H "Authorization: Basic ${{ secrets.ZENDESK_API_KEY }}" \
                 -X POST
-            fi
-          
-          
+            fi      
           fi
 
           if [ -z "${{ env.UNKNOWN_PRS }}" ]; then
