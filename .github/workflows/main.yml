@@ -85,6 +85,7 @@ jobs:
                   createTime=$(date -d "${created}" +%s)
                   updateTime=$(date -d "${updated}" +%s)
                   if [[ "${createTime}" -lt "${stalePeriodSecs}" ]] && [[ "${createTime}" -eq "${updateTime}" ]] ; then
+                    echo ${url} raised on ${created} by unknown author ${author}
                     unknownPRs+="${url} raised on ${created} by unknown author ${author}\n"
                   fi
                 fi
@@ -100,7 +101,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -n "${{ env.UNKNOWN_PRS }}" ]; then
-            echo -e "The following PRs have been raised in the last :\n${{ env.UNKNOWN_PRS }}"
+            echo -e "The following PRs have been raised in the last ${{ env.PR_AGE }}:\n\n${{ env.UNKNOWN_PRS }}\n"
           fi
 
           
