@@ -19,9 +19,10 @@ jobs:
     runs-on: ubuntu-slim
     steps:
       - name: Get open PRs from all EAS repositories
-        id: get-PRs
         run: |
-          declare -a unknownPRs
+          set -euo pipefail
+          
+          unknownPRs=""
           
           readRepo()
           {
@@ -34,7 +35,7 @@ jobs:
             jq -r '.[] | "\(.url)~\(.title)~\(.user.login)~\(.created_at)~\(.updated_at)"'
           }
 
-          runReport()
+          getPRs()
           {
             stalePeriodSecs=$(date -d "${{ env.PR_AGE }} ago" +%s)
             repos=${{ env.REPOS }}
@@ -54,20 +55,22 @@ jobs:
                   createTime=$(date -d "${created}" +%s)
                   updateTime=$(date -d "${updated}" +%s)
                   if [[ "${createTime}" -lt "${stalePeriodSecs}" ]] && [[ "${createTime}" -eq "${updateTime}" ]] ; then
-                    echo $url raised on $created by unknown author $author
-                    unknownPR+=($arrPR)
+                    unknownPRs+="${url} raised on ${created} by unknown author ${author}\n"
                   fi
                 fi
               done
             done
 
+            echo "UNKNOWN_PRS=$unknownPRs" >> $GITHUB_ENV
+
+
             # If list of PRs > 0 then generate slack report
-            if [ ${#unknownPR[@]} -gt 0 ]; then
-              echo ${#unknownPR[@]} PRs found with unknown author raised more than ${{ env.PR_AGE }} ago
-            fi
+#            if [ ${#unknownPRs[@]} -gt 0 ]; then
+ #             echo ${#unknownPRs[@]} PRs found with unknown author raised more than ${{ env.PR_AGE }} ago
+  #          fi
           }
 
-          runReport
+          getPRs
 
 
  
