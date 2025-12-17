@@ -9,21 +9,49 @@ on:
         required: false
         default: "false"
   push:
+  
 env:
-  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  REPOS: ("node-sonos-http-api" "node-sonos-http-api")
-  EAS_TEAM: ("tester1" "tester2")
-  PR_AGE: "1 hour"
+  GH_TOKEN : ${{ secrets.GITHUB_TOKEN }}
+  REPOS    : ("node-sonos-http-api" "node-sonos-http-api")
+  EAS_TEAM : ("tester1" "tester2")
+  PR_AGE   : "1 hour"
   
 jobs:
   api-test:
     runs-on: ubuntu-slim
-    
     steps:
-      - name: Get open PRs from all EAS repositories
+
+
+      - name: Should a notification be sent for manual trigger
+        if: ${{ github.event_name != 'schedule' }}
         run: |
           set -euo pipefail
-          
+          send_notification="${{ inputs.send_notification }}"
+          echo "Send notifications: $send_notification"
+          echo "SEND_NOTIFICATION=$send_notification" >> $GITHUB_ENV
+
+
+      - name: Should a notification be sent for schedule
+        if: ${{ github.event_name == 'schedule' }}
+        run: |
+          set -euo pipefail
+          send_notification="false"
+
+          day=$(date +%A)
+          time_of_day_lower=$(date +%p)
+          time_of_day=${time_of_day_lower^^}
+          echo "Today is: $day"
+          echo "Time of day is: $time_of_day"
+          if [[ "$day" != "Saturday" && "$day" != "Sunday" && "$time_of_day" == "AM" ]]; then
+            send_notification="true"
+          fi
+          echo "Send notifications: $send_notification"
+          echo "SEND_NOTIFICATION=$send_notification" >> $GITHUB_ENV
+
+
+      - name: Get open PRs from all EAS repositories
+        run: |
+          set -euo pipefail          
           unknownPRs=""
           
           readRepo()
@@ -64,14 +92,18 @@ jobs:
             done
 
             echo "UNKNOWN_PRS=$unknownPRs" >> $GITHUB_ENV
-
           }
 
           getPRs
 
+      - name: Send notification
+        run: |
+          set -euo pipefail
+          if [ -n "${{ env.UNKNOWN_PRS }}" ]; then
+            echo -e "The following PRs have been raised in the last :\n${{ env.UNKNOWN_PRS }}"
+          fi
 
- 
-
+          
 
 
 
