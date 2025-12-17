@@ -15,7 +15,8 @@ on:
   push:
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  REPOS: ("node-sonos-http-api" "node-sonos-http-api")
+  REPOS:    ("node-sonos-http-api" "node-sonos-http-api")
+  EAS_TEAM: ("tester1" "tester2")
 jobs:
   api-test:
     runs-on: ubuntu-slim
@@ -23,7 +24,6 @@ jobs:
       - name: Get open PRs from all repositories
         id: get-PRs
         run: |
-          declare -a easTeam=("tester")
           declare -a unknownPR
           stalePeriod="1 hour"
 
@@ -48,7 +48,9 @@ jobs:
           {
             stalePeriodSecs=$(date -d "${stalePeriod} ago" +%s)
             repos=${{ env.REPOS }}
-            echo ${repos}
+            easTeam=${{ env.EAS_TEAM }}
+            echo ${easTeam[0]}
+            echo ${easTeam[1]}
             for repo in "${repos[@]}"
             do
               IFS=$'\n'
