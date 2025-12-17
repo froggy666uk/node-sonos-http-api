@@ -50,10 +50,10 @@ jobs:
           runReport()
           {
             stalePeriodSecs=$(date -d "${stalePeriod} ago" +%s)
-            for repo in "${repostest[@]}"
+            for repo in "${repos[@]}"
             do
               IFS=$'\n'
-              for PR in $(readRepoStub $repo)
+              for PR in $(readRepo $repo)
               do
                 IFS='~'; arrPR=($PR)
                 url=${arrPR[0]} ; desc=${arrPR[1]} ; author=${arrPR[2]} ; created=${arrPR[3]} ; updated=${arrPR[4]}
