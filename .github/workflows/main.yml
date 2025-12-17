@@ -10,10 +10,11 @@ on:
         default: "false"
   push:
 env:
-  GH_TOKEN : ${{ secrets.GITHUB_TOKEN }}
-  REPOS    : ("node-sonos-http-api" "node-sonos-http-api")
-  EAS_TEAM : ("tester1" "tester2")
-  PR_AGE   : "1 hour"
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  REPOS: ("node-sonos-http-api" "node-sonos-http-api")
+  EAS_TEAM: ("tester1" "tester2")
+  PR_AGE: "1 hour"
+  
 jobs:
   api-test:
     runs-on: ubuntu-slim
