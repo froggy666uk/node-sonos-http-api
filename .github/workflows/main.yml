@@ -17,6 +17,7 @@ env:
 jobs:
   api-test:
     runs-on: ubuntu-slim
+    
     steps:
       - name: Get open PRs from all EAS repositories
         run: |
