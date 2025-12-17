@@ -15,6 +15,7 @@ on:
   push:
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  REPOS: ("node-sonos-http-api" "node-sonos-http-api")
 jobs:
   api-test:
     runs-on: ubuntu-slim
@@ -22,18 +23,15 @@ jobs:
       - name: Get open PRs from all repositories
         id: get-PRs
         run: |
-          declare -a repos=("node-sonos-http-api" "node-sonos-http-api")
           declare -a easTeam=("tester")
           declare -a unknownPR
           stalePeriod="1 hour"
-
 
           readRepoStub()
           {
             repo=${1}
             cat ~/${repo} | jq -r '.[] | "\(.url)~\(.title)~\(.user.login)~\(.created_at)~\(.updated_at)"'
           }
-
 
           readRepo()
           {
@@ -46,11 +44,10 @@ jobs:
             jq -r '.[] | "\(.url)~\(.title)~\(.user.login)~\(.created_at)~\(.updated_at)"'
           }
 
-
           runReport()
           {
             stalePeriodSecs=$(date -d "${stalePeriod} ago" +%s)
-            for repo in "${repos[@]}"
+            for repo in "${{ env.REPOS[@] }}"
             do
               IFS=$'\n'
               for PR in $(readRepo $repo)
@@ -76,7 +73,6 @@ jobs:
               echo ${#unknownPR[@]} PRs found with unknown author raised more than ${stalePeriod} ago
             fi
           }
-
 
           runReport
 
